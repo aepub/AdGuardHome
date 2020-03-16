@@ -845,7 +845,8 @@ func (s *Server) filterDNSRequest(ctx *dnsContext) (*dnsfilter.Result, error) {
 		// log.Tracef("Host %s is filtered, reason - '%s', matched rule: '%s'", host, res.Reason, res.Rule)
 		d.Res = s.genDNSFilterMessage(d, &res)
 
-	} else if res.Reason == dnsfilter.ReasonRewrite && len(res.IPList) != 0 {
+	} else if (res.Reason == dnsfilter.ReasonRewrite || res.Reason == dnsfilter.ReasonRewriteAuto) &&
+		len(res.IPList) != 0 {
 		resp := s.makeResponse(req)
 
 		name := host

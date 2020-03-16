@@ -53,6 +53,9 @@ type Config struct {
 	// Per-client settings can override this configuration.
 	BlockedServices []string `yaml:"blocked_services"`
 
+	// IP-hostname pairs taken from system configuration (e.g. /etc/hosts) files
+	AutoHosts *AutoHosts `yaml:"-"`
+
 	// Called when the configuration is changed by HTTP request
 	ConfigModified func() `yaml:"-"`
 
@@ -139,6 +142,9 @@ const (
 
 	// ReasonRewrite - rewrite rule was applied
 	ReasonRewrite
+
+	// ReasonRewriteAuto - automatic DNS record
+	ReasonRewriteAuto
 )
 
 var reasonNames = []string{
@@ -154,6 +160,7 @@ var reasonNames = []string{
 	"FilteredBlockedService",
 
 	"Rewrite",
+	"RewriteAuto",
 }
 
 func (r Reason) String() string {
@@ -300,6 +307,13 @@ func (d *Dnsfilter) CheckHost(host string, qtype uint16, setts *RequestFiltering
 
 	result = d.processRewrites(host)
 	if result.Reason == ReasonRewrite {
+		return result, nil
+	}
+
+	ips := d.Config.AutoHosts.Process(host)
+	if ips != nil {
+		result.Reason = ReasonRewriteAuto
+		result.IPList = ips
 		return result, nil
 	}
 

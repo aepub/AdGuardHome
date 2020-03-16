@@ -621,6 +621,14 @@ func TestRewrites(t *testing.T) {
 	assert.True(t, r.IPList[0].Equal(net.ParseIP("1.2.3.4")))
 }
 
+func TestAutoHosts(t *testing.T) {
+	ah := AutoHosts{}
+	ah.table = make(map[string][]net.IP)
+	ah.load(ah.table, "/etc/hosts")
+	ips := ah.process("localhost")
+	assert.True(t, ips[0].Equal(net.ParseIP("127.0.0.1")))
+}
+
 // BENCHMARKS
 
 func BenchmarkSafeBrowsing(b *testing.B) {
