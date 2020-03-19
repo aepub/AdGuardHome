@@ -2,11 +2,15 @@ package dnsforward
 
 import (
 	"encoding/json"
+	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/AdguardTeam/golibs/log"
+	"github.com/AdguardTeam/urlfilter"
+	"github.com/AdguardTeam/urlfilter/filterlist"
 )
 
 type accessCtx struct {
@@ -18,8 +22,7 @@ type accessCtx struct {
 	allowedClientsIPNet    []net.IPNet // CIDRs of whitelist clients
 	disallowedClientsIPNet []net.IPNet // CIDRs of clients that should be blocked
 
-	blockedHosts         map[string]bool // hosts that should be blocked
-	blockedHostsWildcard []string        // wildcards for the hosts to block
+	blockedHostsEngine *urlfilter.DNSEngine // finds hosts that should be blocked
 }
 
 func (a *accessCtx) Init(allowedClients, disallowedClients, blockedHosts []string) error {
@@ -33,14 +36,25 @@ func (a *accessCtx) Init(allowedClients, disallowedClients, blockedHosts []strin
 		return err
 	}
 
-	a.blockedHosts = make(map[string]bool)
+	buf := strings.Builder{}
 	for _, s := range blockedHosts {
-		if !isWildcard(s) {
-			a.blockedHosts[s] = true
-		} else {
-			a.blockedHostsWildcard = append(a.blockedHostsWildcard, s)
-		}
+		buf.WriteString(s)
+		buf.WriteString("\n")
 	}
+
+	listArray := []filterlist.RuleList{}
+	list := &filterlist.StringRuleList{
+		ID:             int(0),
+		RulesText:      buf.String(),
+		IgnoreCosmetic: true,
+	}
+	listArray = append(listArray, list)
+	rulesStorage, err := filterlist.NewRuleStorage(listArray)
+	if err != nil {
+		return fmt.Errorf("filterlist.NewRuleStorage(): %s", err)
+	}
+	a.blockedHostsEngine = urlfilter.NewDNSEngine(rulesStorage)
+
 	return nil
 }
 
@@ -108,17 +122,7 @@ func (a *accessCtx) IsBlockedIP(ip string) bool {
 // IsBlockedDomain - return TRUE if this domain should be blocked
 func (a *accessCtx) IsBlockedDomain(host string) bool {
 	a.lock.Lock()
-	_, ok := a.blockedHosts[host]
-
-	if !ok {
-		for _, wc := range a.blockedHostsWildcard {
-			if matchDomainWildcard(host, wc) {
-				ok = true
-				break
-			}
-		}
-	}
-
+	_, ok := a.blockedHostsEngine.Match(host, nil)
 	a.lock.Unlock()
 	return ok
 }
