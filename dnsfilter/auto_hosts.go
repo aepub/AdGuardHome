@@ -56,18 +56,21 @@ func (a *AutoHosts) Init() {
 		a.hostsDirs = append(a.hostsDirs, "/tmp/hosts") // OpenWRT: "/tmp/hosts/dhcp.cfg01411c"
 	}
 
-	go a.update()
-	a.updateChan <- true
-
 	var err error
 	a.watcher, err = fsnotify.NewWatcher()
 	if err != nil {
 		log.Error("AutoHosts: %s", err)
 	}
+}
+
+// Start - start module
+func (a *AutoHosts) Start() {
+	go a.update()
+	a.updateChan <- true
 
 	go a.watcherLoop()
 
-	err = a.watcher.Add(a.hostsFn)
+	err := a.watcher.Add(a.hostsFn)
 	if err != nil {
 		log.Error("AutoHosts: %s", err)
 	}

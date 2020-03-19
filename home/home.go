@@ -272,6 +272,7 @@ func run(args options) {
 			log.Fatalf("%s", err)
 		}
 		Context.tls.Start()
+		Context.autoHosts.Start()
 
 		go func() {
 			err := startDNSServer()
