@@ -310,11 +310,13 @@ func (d *Dnsfilter) CheckHost(host string, qtype uint16, setts *RequestFiltering
 		return result, nil
 	}
 
-	ips := d.Config.AutoHosts.Process(host)
-	if ips != nil {
-		result.Reason = ReasonRewriteAuto
-		result.IPList = ips
-		return result, nil
+	if d.Config.AutoHosts != nil {
+		ips := d.Config.AutoHosts.Process(host)
+		if ips != nil {
+			result.Reason = ReasonRewriteAuto
+			result.IPList = ips
+			return result, nil
+		}
 	}
 
 	// try filter lists first
