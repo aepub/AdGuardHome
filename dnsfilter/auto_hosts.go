@@ -98,10 +98,11 @@ func (a *AutoHosts) load(table map[string][]net.IP, fn string) {
 	r := bufio.NewReader(f)
 	log.Debug("AutoHosts: loading hosts from file %s", fn)
 
-	for {
+	finish := false
+	for !finish {
 		line, err := r.ReadString('\n')
 		if err == io.EOF {
-			break
+			finish = true
 		} else if err != nil {
 			log.Error("AutoHosts: %s", err)
 			return

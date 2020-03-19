@@ -2,7 +2,9 @@ package dnsfilter
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"path"
 	"runtime"
 	"testing"
@@ -621,10 +623,27 @@ func TestRewrites(t *testing.T) {
 	assert.True(t, r.IPList[0].Equal(net.ParseIP("1.2.3.4")))
 }
 
+func prepareTestDir() string {
+	const dir = "./agh-test"
+	_ = os.RemoveAll(dir)
+	_ = os.MkdirAll(dir, 0755)
+	return dir
+}
+
 func TestAutoHosts(t *testing.T) {
 	ah := AutoHosts{}
 	ah.table = make(map[string][]net.IP)
-	ah.load(ah.table, "/etc/hosts")
+
+	dir := prepareTestDir()
+	defer func() { _ = os.RemoveAll(dir) }()
+
+	f, _ := ioutil.TempFile(dir, "")
+	defer os.Remove(f.Name())
+	defer f.Close()
+
+	f.WriteString("  127.0.0.1   host  localhost  ")
+
+	ah.load(ah.table, f.Name())
 	ips := ah.Process("localhost")
 	assert.True(t, ips[0].Equal(net.ParseIP("127.0.0.1")))
 }
