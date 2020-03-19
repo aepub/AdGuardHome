@@ -625,7 +625,7 @@ func TestAutoHosts(t *testing.T) {
 	ah := AutoHosts{}
 	ah.table = make(map[string][]net.IP)
 	ah.load(ah.table, "/etc/hosts")
-	ips := ah.process("localhost")
+	ips := ah.Process("localhost")
 	assert.True(t, ips[0].Equal(net.ParseIP("127.0.0.1")))
 }
 
