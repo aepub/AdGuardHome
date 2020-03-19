@@ -44,11 +44,11 @@ const Form = (props) => {
             </div>
             <div className="form__group form__group--settings">
                 <Field
-                    name="hide_client_ip"
+                    name="anonymize_client_ip"
                     type="checkbox"
                     component={renderSelectField}
-                    placeholder={t('hide_client_ip')}
-                    subtitle={t('hide_client_ip_desc')}
+                    placeholder={t('anonymize_client_ip')}
+                    subtitle={t('anonymize_client_ip_desc')}
                     disabled={processing}
                 />
             </div>
